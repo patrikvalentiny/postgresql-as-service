@@ -45,7 +45,89 @@ This project investigates how PostgreSQL, with its rich ecosystem of extensions 
 > Just because you can do something in PostgreSQL doesn't mean you should.  
 
 ## Analysis & Results
-TBD
+### pgcrypto
+The pgcrypto module provides cryptographic functions for PostgreSQL.
+Examples in the `src/sql/extensions/pgcrypto.sql` show how it can be setup and basic usage.
+#### Setup 
+This module is considered “trusted”, that is, it can be installed by non-superusers who have CREATE privilege on the current database.
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+#### Password Hashing
+The `crypt(password text, salt text)` method allows to securely store passwords with a salt in order to prevent duplicates and improve security
+Salt generation is handled via `gen_salt(type text [, iter_count integer ])`. This method allows to use different algorithms depending on the required security / performance
+
+#### Password verification
+`crypt(plaintext password, v_hashed_password)` will return a hash with the same salt as the hashed password.
+
+To be able to check the password easily we can create a function that can be reused 
+
+
+```sql
+CREATE OR REPLACE FUNCTION verify_password(
+    user_identifier TEXT,
+    plain_password TEXT
+) RETURNS BOOLEAN 
+LANGUAGE plpgsql
+AS 
+$$
+DECLARE
+    hashed_password TEXT;
+BEGIN
+    SELECT password INTO hashed_password
+    FROM test_table
+    WHERE username = user_identifier OR email = user_identifier OR user_id = uuid(user_identifier);
+
+    IF hashed_password IS NULL THEN
+        RETURN FALSE;
+    END IF;
+
+    RETURN crypt(plain_password, hashed_password) = hashed_password;
+END;
+$$;
+```
+
+### pgjwt
+The pgjwt extension provides functions to create and verify JSON Web Tokens (JWT) directly in PostgreSQL.
+
+#### Setup
+Install the extension (requires superuser):
+```sql
+CREATE EXTENSION IF NOT EXISTS pgjwt;
+```
+
+#### Creating a JWT
+Use the `sign` function to generate a JWT from a JSON payload and secret key:
+```sql
+SELECT sign(
+  '{"sub": "user123", "role": "admin"}',
+  'your_secret_key'
+) AS jwt_token;
+```
+
+You can also include standard claims like `iat` (issued at) and `exp` (expiration):
+```sql
+SELECT sign(
+  json_build_object(
+    'sub', 'user123',
+    'role', 'admin',
+    'iat', EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::text,
+    'exp', EXTRACT(EPOCH FROM CURRENT_TIMESTAMP + INTERVAL '1 hour')::text
+  ),
+  'your_secret_key'
+) AS jwt_token;
+```
+
+
+
+#### Verifying a JWT
+Use the `verify` function to check and decode a JWT:
+```sql
+SELECT verify(
+  'jwt_token_here',
+  'your_secret_key'
+) AS payload;
+```
 
 ## Conclusion
 
