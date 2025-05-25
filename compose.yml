@@ -22,6 +22,10 @@ services:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://127.0.0.1:3000
       PGRST_DB_ANON_ROLE: web_anon
       PGRST_DB_SCHEMAS: auth,api
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      PGRST_JWT_SECRET_IS_BASE64: false
+    env_file:
+      - .env
     depends_on:
       - db
 volumes:

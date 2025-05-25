@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS auth.secrets (
 
 -- Insert default JWT secret
 INSERT INTO auth.secrets (secret) 
-VALUES ('your-jwt-secret-key-change-this');
+VALUES ('reallyreallyreallyreallyverysafe');
 
 -- Register function
 CREATE OR REPLACE FUNCTION auth.register(email TEXT, password TEXT)
@@ -65,7 +65,8 @@ BEGIN
         json_build_object(
             'user_id', user_id,
             'email', email,
-            'exp', extract(epoch from now() + interval '24 hours')
+            'exp', extract(epoch from now() + interval '24 hours')::integer,
+            'iat', extract(epoch from now())::integer
         ),
         jwt_secret
     ) INTO token;
@@ -122,7 +123,8 @@ BEGIN
         json_build_object(
             'user_id', user_record.id,
             'email', user_record.email,
-            'exp', extract(epoch from now() + interval '24 hours')
+            'exp', extract(epoch from now() + interval '24 hours')::integer,
+            'iat', extract(epoch from now())::integer
         ),
         jwt_secret
     ) INTO token;
@@ -142,7 +144,7 @@ CREATE OR REPLACE FUNCTION auth.verify_jwt(token TEXT)
 RETURNS JSON AS $$
 DECLARE
     jwt_secret TEXT;
-    payload JSON;
+    verify_result RECORD;
 BEGIN
     -- Get JWT secret
     SELECT secret INTO jwt_secret
@@ -151,9 +153,11 @@ BEGIN
     LIMIT 1;
     
     -- Verify and decode token
-    SELECT payload FROM verify(token, jwt_secret) INTO payload;
+    SELECT * INTO verify_result
+    FROM verify(token, jwt_secret);
     
-    IF payload IS NULL THEN
+    -- Check if token is valid
+    IF verify_result.valid IS NOT TRUE THEN
         RETURN json_build_object(
             'success', false,
             'message', 'Invalid token'
@@ -162,7 +166,7 @@ BEGIN
     
     RETURN json_build_object(
         'success', true,
-        'payload', payload
+        'payload', verify_result.payload::json
     );
 EXCEPTION
     WHEN OTHERS THEN

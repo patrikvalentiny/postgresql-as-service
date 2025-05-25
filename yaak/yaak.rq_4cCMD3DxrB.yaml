@@ -1,0 +1,46 @@
+type: http_request
+model: http_request
+id: rq_4cCMD3DxrB
+createdAt: 2025-05-25T08:09:57.182694500
+updatedAt: 2025-05-25T09:16:00.799192200
+workspaceId: wk_CuiizADLsD
+folderId: null
+authentication:
+  payload: |-
+    {
+      "user_id": "9209330a-4bf5-4580-9eb2-abf6413b3237",
+      "email": "t@t.tt",
+      "exp": 1748250717,
+      "iat": 1748164317
+    }
+  secret: reallyreallyreallyreallyverysafe
+  secretBase64: false
+authenticationType: jwt
+body:
+  text: |-
+    {    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIiA6ICI5MjA5MzMwYS00YmY1LTQ1ODAtOWViMi1hYmY2NDEzYjMyMzciLCAiZW1haWwiIDogInRAdC50dCIsICJleHAiIDogMTc0ODI1MDkzNCwgImlhdCIgOiAxNzQ4MTY0NTM0fQ.NLRVv9HQ0iyAOeqLL62TCDjBKfqVlhHEAZPlWkzTt9k"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: iJa9icQUWm
+- enabled: true
+  name: Accept-Profile
+  value: auth
+  id: tu4IZsEW6a
+- enabled: true
+  name: Content-Profile
+  value: auth
+  id: P272hJgtf8
+- enabled: true
+  name: ''
+  value: ''
+  id: ZbYB5pmfDm
+method: POST
+name: ''
+sortPriority: 0.0
+url: http://127.0.0.1:3000/rpc/verify_jwt
+urlParameters: []

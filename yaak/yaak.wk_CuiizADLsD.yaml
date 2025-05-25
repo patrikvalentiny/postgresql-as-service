@@ -1,0 +1,11 @@
+type: workspace
+model: workspace
+id: wk_CuiizADLsD
+createdAt: 2025-05-25T08:08:19.203976900
+updatedAt: 2025-05-25T09:13:16.794131900
+name: PaaS
+description: ''
+encryptionKeyChallenge: eUE0azNuQwGZKqFFk3NFScb1m/QKXJ8kjdgWG8i0ksahif3t8Ux6ZzJNRQJ1J8CgHXN5DBP6nzluAoK7F1+FdODzfKaqclgpRmhC7HcNSW3OMkLMOrDuSjp4kjZwzIV9uMs=
+settingValidateCertificates: true
+settingFollowRedirects: true
+settingRequestTimeout: 0

@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_9xWV6xjocK
+createdAt: 2025-05-25T08:09:08.681928300
+updatedAt: 2025-05-25T08:09:08.681929400
+workspaceId: wk_CuiizADLsD
+folderId: null
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: accept
+  value: application/json
+  id: null
+method: GET
+name: ''
+sortPriority: 0.0
+url: http://127.0.0.1:3000/rpc/verify_jwt
+urlParameters:
+- enabled: true
+  name: token
+  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIiA6ICJiNWM3Yjg5Yi1hMjgwLTRhNmMtOTNjNy1mZmRiYWVkNWNlZjUiLCAiZW1haWwiIDogInRlc3RAdGVzdC5jb20iLCAiZXhwIiA6IDE3NDgyNDU2MzMuNjMyNTYyfQ.oICs_hfthaRR9iCfQH-qqzYECDwWYRnVzwNGsQiHAMM
+  id: null
