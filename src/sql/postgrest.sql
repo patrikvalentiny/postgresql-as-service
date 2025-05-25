@@ -200,3 +200,139 @@ CREATE OR REPLACE TRIGGER update_users_updated_at
     GRANT EXECUTE ON FUNCTION auth.login(TEXT, TEXT) TO web_anon;
     GRANT EXECUTE ON FUNCTION auth.verify_jwt(TEXT) TO web_anon;
 
+-- Create alcohol tracking schema
+DROP SCHEMA IF EXISTS alc CASCADE;
+CREATE SCHEMA alc;
+
+-- Grant usage on alc schema to web_anon
+GRANT USAGE ON SCHEMA alc TO web_anon;
+
+-- Users table for the app (separate from auth.users for app-specific data)
+CREATE TABLE alc.users (
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+    profile JSONB DEFAULT '{}'::jsonb -- avatar, preferences, optional metadata
+);
+
+-- Sessions table
+CREATE TABLE alc.sessions (
+    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    created_by UUID NOT NULL REFERENCES alc.users(user_id),
+    start_time TIMESTAMPTZ DEFAULT NOW(),
+    end_time TIMESTAMPTZ,
+    status TEXT DEFAULT 'active' CHECK (status IN ('planned', 'active', 'ended', 'cancelled')),
+    details JSONB DEFAULT '{}'::jsonb -- session notes, location info, custom rules/settings
+);
+
+-- Invitations table
+CREATE TABLE alc.invitations (
+    invitation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES alc.sessions(session_id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES alc.users(user_id),
+    recipient_id UUID NOT NULL REFERENCES alc.users(user_id),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+    sent_at TIMESTAMPTZ DEFAULT NOW(),
+    responded_at TIMESTAMPTZ,
+    metadata JSONB DEFAULT '{}'::jsonb -- custom message, RSVP reason
+);
+
+-- Drink types reference table
+CREATE TABLE alc.drink_types (
+    drink_type_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL CHECK (category IN ('alcoholic', 'soft', 'combination')),
+    default_alcohol_percentage DECIMAL(5,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Drinks tracking table
+CREATE TABLE alc.drinks (
+    drink_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES alc.sessions(session_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES alc.users(user_id),
+    drink_type_id INTEGER NOT NULL REFERENCES alc.drink_types(drink_type_id),
+    amount_ml INTEGER NOT NULL CHECK (amount_ml > 0),
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    details JSONB DEFAULT '{}'::jsonb -- brand, notes, custom mix info, optional tags
+);
+
+-- Add update timestamp triggers
+CREATE OR REPLACE FUNCTION alc.update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON alc.users
+    FOR EACH ROW
+    EXECUTE FUNCTION alc.update_updated_at();
+
+-- Add some default drink types
+INSERT INTO alc.drink_types (name, category, default_alcohol_percentage) VALUES
+    ('Beer', 'alcoholic', 5.0),
+    ('Wine', 'alcoholic', 12.0),
+    ('Vodka', 'alcoholic', 40.0),
+    ('Whiskey', 'alcoholic', 40.0),
+    ('Cocktail', 'combination', 15.0),
+    ('Soda', 'soft', 0.0),
+    ('Water', 'soft', 0.0),
+    ('Juice', 'soft', 0.0);
+
+-- Create row level security policies
+ALTER TABLE alc.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alc.sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alc.invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alc.drinks ENABLE ROW LEVEL SECURITY;
+
+-- Users can only see their own profile
+CREATE POLICY users_own_data ON alc.users
+    FOR ALL USING (user_id = current_setting('request.jwt.claim.user_id', true)::uuid);
+
+-- Sessions: users can see sessions they created or are invited to
+CREATE POLICY sessions_access ON alc.sessions
+    FOR ALL USING (
+        created_by = current_setting('request.jwt.claim.user_id', true)::uuid
+        OR session_id IN (
+            SELECT session_id FROM alc.invitations 
+            WHERE recipient_id = current_setting('request.jwt.claim.user_id', true)::uuid 
+            AND status = 'accepted'
+        )
+    );
+
+-- Invitations: users can see invitations they sent or received
+CREATE POLICY invitations_access ON alc.invitations
+    FOR ALL USING (
+        sender_id = current_setting('request.jwt.claim.user_id', true)::uuid
+        OR recipient_id = current_setting('request.jwt.claim.user_id', true)::uuid
+    );
+
+-- Drinks: users can only see drinks in sessions they have access to
+CREATE POLICY drinks_access ON alc.drinks
+    FOR ALL USING (
+        session_id IN (
+            SELECT session_id FROM alc.sessions 
+            WHERE created_by = current_setting('request.jwt.claim.user_id', true)::uuid
+            OR session_id IN (
+                SELECT session_id FROM alc.invitations 
+                WHERE recipient_id = current_setting('request.jwt.claim.user_id', true)::uuid 
+                AND status = 'accepted'
+            )
+        )
+    );
+
+-- Grant permissions to web_anon
+GRANT SELECT, INSERT, UPDATE, DELETE ON alc.users TO web_anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON alc.sessions TO web_anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON alc.invitations TO web_anon;
+GRANT SELECT ON alc.drink_types TO web_anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON alc.drinks TO web_anon;
+GRANT USAGE ON SEQUENCE alc.drink_types_drink_type_id_seq TO web_anon;
+

@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_KMwQ2TrYS9
+createdAt: 2025-05-25T20:41:29.825755900
+updatedAt: 2025-05-25T20:42:14.804720300
+workspaceId: wk_CuiizADLsD
+folderId: null
+authentication:
+  payload: |-
+    {
+      "user_id": "9209330a-4bf5-4580-9eb2-abf6413b3237",
+      "email": "t@t.tt",
+      "exp": 1748250717,
+      "iat": 1748164317
+    }
+  secret: reallyreallyreallyreallyverysafe
+  secretBase64: false
+authenticationType: jwt
+body:
+  text: ''
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: iJa9icQUWm
+- enabled: true
+  name: Accept-Profile
+  value: alc
+  id: tu4IZsEW6a
+- enabled: true
+  name: Content-Profile
+  value: alc
+  id: P272hJgtf8
+- enabled: true
+  name: ''
+  value: ''
+  id: YJheUEiNJK
+method: GET
+name: ''
+sortPriority: 0.001
+url: http://127.0.0.1:3000/drink_types
+urlParameters: []
