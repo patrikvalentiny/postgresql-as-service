@@ -1,8 +1,16 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../contexts/useAuthContext'
 
 function Home() {
   const { isAuthenticated, user, logout, isLoading } = useAuthContext()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/dashboard')
+    }
+  }, [isAuthenticated, isLoading, navigate])
 
   if (isLoading) {
     return (
