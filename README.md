@@ -1,4 +1,4 @@
-# PostgreSQL as a Service
+# PostgreSQL as Service
 
 ## Introduction
 
