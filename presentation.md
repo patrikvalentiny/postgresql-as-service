@@ -38,7 +38,7 @@ How to build modern apps without a traditional backend
   - Exposes tables, views, and functions as REST endpoints  
   - Supports filtering, pagination, and relationships  
   - Integrates with PostgreSQL roles and Row Level Security (RLS)
-
+  - Uses JWTs to securely identify users and enforce permissions based on claims
 <!-- ~0:45 min (2:00 total) -->
 
 ## How Does It Work?
@@ -49,25 +49,6 @@ How to build modern apps without a traditional backend
 4. **Frontend** (React, etc.) makes HTTP requests directly to PostgREST
 
 <!-- ~0:45 min (2:45 total) -->
-
-## Example Architecture
-
-```
-Frontend App
-    |
-   REST
-    v
-PostgREST (REST API)
-    |
-   SQL
-    v
-PostgreSQL Database
-```
-
-- No custom backend code
-- All business logic and security in the database
-
-<!-- ~0:45 min (3:30 total) -->
 
 ## Security: Authentication
 
@@ -81,8 +62,9 @@ PostgreSQL Database
 - **Example:**  
 
   ```sql
+  -- Issue JWT for todo app user
   SELECT sign(
-    json_build_object('sub', user_id, 'role', 'app_user', ...),
+    json_build_object('sub', user_id, 'role', 'app_user', 'exp', EXTRACT(EPOCH FROM CURRENT_TIMESTAMP + INTERVAL '1 HOUR')::text),
     secret
   ) FROM auth.secrets WHERE is_active = TRUE;
   ```
@@ -98,14 +80,15 @@ PostgreSQL Database
 - **Example Policy:**  
 
   ```sql
-  CREATE POLICY user_data_access ON my_table
+  -- Only allow users to access their own todos
+  CREATE POLICY user_todo_access ON todos
     FOR ALL TO app_user
     USING (owner_id = current_setting('request.jwt.claim.sub')::uuid);
   ```
 
 - **Roles:**  
   - `web_anon`: anonymous, read-only
-  - `app_user`: authenticated, can read/write own data
+  - `app_user`: authenticated, can read/write own todos
 
 <!-- ~1:00 min (5:30 total) -->
 
@@ -115,10 +98,11 @@ PostgreSQL Database
 - Use JWT in `Authorization` header
 
 ```ts
+// Fetch todos for the logged-in user
 const response = await axios.get('https://postgrest/todos', {
     params: {
         owner_id: `<user_id>`,
-        order: 'timestamp.desc',
+        order: 'created_at.desc',
         limit: 10,
         offset: 20,
     },
@@ -152,9 +136,8 @@ const response = await axios.get('https://postgrest/todos', {
 
 - **Test RLS policies thoroughly**
 - **Keep business logic in SQL functions/views**
-- **Use migrations for schema changes**
-- **Rotate JWT secrets periodically**
-- **Document your API endpoints**
+- **Use migrations with versioning for schema changes**
+- **Document your API endpoints** (Swagger / OpenAPI)
 
 <!-- ~0:45 min (7:45 total) -->
 
@@ -163,6 +146,6 @@ const response = await axios.get('https://postgrest/todos', {
 - PostgREST lets you build secure, modern apps **without a backend**
 - PostgreSQL handles both **data** and **security**
 - RLS and JWTs are key for safe direct access
-- Great for rapid prototyping and small/medium projects
+- Great for rapid prototyping and small/medium projects which do not require too much business logic
 
 <!-- ~0:15 min (8:00 total) -->
