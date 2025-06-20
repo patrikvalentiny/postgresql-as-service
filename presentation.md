@@ -3,12 +3,10 @@ marp: true
 theme: rose-pine
 paginate: true
 headingDivider: 2
-marp-cli:
-  html: true
 ---
 
 
-# Secure Frontend Apps with PostgREST
+# Frontend Apps with PostgREST
 
 How to build modern apps without a traditional backend
 
@@ -110,7 +108,7 @@ const response = await axios.get('https://postgrest/todos', {
         Authorization: 'Bearer <jwt>',
         'Accept-Profile': '<schema>',
         'Content-Profile': '<schema>',
-    },
+    }
 });
 ```
 
